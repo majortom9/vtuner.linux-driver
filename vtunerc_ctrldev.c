@@ -226,6 +226,11 @@ static long vtunerc_ctrldev_ioctl(struct file *file, unsigned int cmd,
 			vtype = VT_C;
 			printk(KERN_NOTICE "vtunerc%d: setting DVB-C tuner vtype\n",
 					ctx->idx);
+		} else
+		if (strcasecmp((char *)arg, "ATSC") == 0) {
+			vtype = VT_A;
+			printk(KERN_NOTICE "vtunerc%d: setting ATSC tuner vtype\n",
+					ctx->idx);
 		} else {
 			printk(KERN_ERR "vtunerc%d: unregognized tuner vtype '%s'\n",
 					ctx->idx, (char *)arg);

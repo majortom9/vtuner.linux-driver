@@ -26,6 +26,7 @@
 #define VT_C   0x02
 #define VT_T   0x04
 #define VT_S2  0x08
+#define VT_A   0x10
 
 #define MSG_SET_FRONTEND		1
 #define MSG_GET_FRONTEND		2

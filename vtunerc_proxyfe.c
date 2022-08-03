@@ -145,6 +145,15 @@ static int dvb_proxyfe_get_frontend(struct dvb_frontend *fe)
 			c->modulation = msg.body.fe_params.u.qam.modulation;
 		}
 		break;
+	case VT_A:
+		/* FIXME: untested */
+		if (ctx->vtype == VT_A && c->delivery_system == SYS_ATSC) {
+			c->modulation = msg.body.fe_params.u.vsb.modulation;
+		}
+		if (ctx->vtype == VT_A && c->delivery_system == SYS_DVBC_ANNEX_B) {
+			c->modulation = msg.body.fe_params.u.qam.modulation;
+		}
+		break;
 	default:
 		printk(KERN_ERR "vtunerc%d: unregognized tuner vtype = %d\n", ctx->idx,
 				ctx->vtype);
@@ -261,6 +270,15 @@ static int dvb_proxyfe_set_frontend(struct dvb_frontend *fe)
 		msg.body.fe_params.u.qam.symbol_rate = c->symbol_rate;
 		msg.body.fe_params.u.qam.fec_inner = c->fec_inner;
 		msg.body.fe_params.u.qam.modulation = c->modulation;
+		break;
+	case VT_A:
+		/* FIXME: untested */
+		if (ctx->vtype == VT_A && c->delivery_system == SYS_ATSC) {
+			msg.body.fe_params.u.vsb.modulation = c->modulation;
+		}
+		if (ctx->vtype == VT_A && c->delivery_system == SYS_DVBC_ANNEX_B) {
+			msg.body.fe_params.u.qam.modulation = c->modulation;
+		}
 		break;
 	default:
 		printk(KERN_ERR "vtunerc%d: unregognized tuner vtype = %d\n",
@@ -433,6 +451,31 @@ static struct dvb_frontend *dvb_proxyfe_qam_attach(struct vtunerc_ctx *ctx)
 	return fe;
 }
 
+static struct dvb_frontend_ops dvb_proxyfe_atsc_ops;
+
+static struct dvb_frontend *dvb_proxyfe_atsc_attach(struct vtunerc_ctx *ctx)
+{
+	struct dvb_frontend *fe = ctx->fe;
+
+	if (!fe) {
+		struct dvb_proxyfe_state *state = NULL;
+
+		/* allocate memory for the internal state */
+		state = kmalloc(sizeof(struct dvb_proxyfe_state), GFP_KERNEL);
+		if (state == NULL) {
+			return NULL;
+		}
+
+		fe = &state->frontend;
+		fe->demodulator_priv = state;
+		state->ctx = ctx;
+	}
+
+	memcpy(&fe->ops, &dvb_proxyfe_atsc_ops, sizeof(struct dvb_frontend_ops));
+
+	return fe;
+}
+
 static struct dvb_frontend_ops dvb_proxyfe_ofdm_ops = {
 	.delsys = { SYS_DVBT },
 	.info = {
@@ -536,6 +579,31 @@ static struct dvb_frontend_ops dvb_proxyfe_qpsk_ops = {
 
 };
 
+static struct dvb_frontend_ops dvb_proxyfe_atsc_ops = {
+	.delsys = { SYS_DVBC_ANNEX_B, SYS_ATSC },
+	.info = {
+		.name			= "vTuner proxyFE ATSC ",
+		.frequency_stepsize_hz	= 62500,
+		.frequency_min_hz	= 54 * MHz,
+		.frequency_max_hz	= 858 * MHz,
+		.caps = FE_CAN_8VSB | FE_CAN_QAM_AUTO | FE_CAN_QAM_64 | FE_CAN_QAM_256
+	},
+
+	.release = dvb_proxyfe_release,
+
+	.init = dvb_proxyfe_init,
+	.sleep = dvb_proxyfe_sleep,
+
+	.set_frontend = dvb_proxyfe_set_frontend,
+	.get_frontend = dvb_proxyfe_get_frontend,
+
+	.read_status = dvb_proxyfe_read_status,
+	.read_ber = dvb_proxyfe_read_ber,
+	.read_signal_strength = dvb_proxyfe_read_signal_strength,
+	.read_snr = dvb_proxyfe_read_snr,
+	.read_ucblocks = dvb_proxyfe_read_ucblocks,
+};
+
 int /*__devinit*/ vtunerc_frontend_init(struct vtunerc_ctx *ctx, int vtype)
 {
 	int ret = 0;
@@ -558,6 +626,9 @@ int /*__devinit*/ vtunerc_frontend_init(struct vtunerc_ctx *ctx, int vtype)
 		break;
 	case VT_C:
 		ctx->fe = dvb_proxyfe_qam_attach(ctx);
+		break;
+	case VT_A:
+		ctx->fe = dvb_proxyfe_atsc_attach(ctx);
 		break;
 	default:
 		printk(KERN_ERR "vtunerc%d: unregognized tuner vtype = %d\n",
