@@ -147,12 +147,7 @@ static int dvb_proxyfe_get_frontend(struct dvb_frontend *fe)
 		break;
 	case VT_A:
 		/* FIXME: untested */
-		if (ctx->vtype == VT_A && c->delivery_system == SYS_ATSC) {
 			c->modulation = msg.body.fe_params.u.vsb.modulation;
-		}
-		if (ctx->vtype == VT_A && c->delivery_system == SYS_DVBC_ANNEX_B) {
-			c->modulation = msg.body.fe_params.u.qam.modulation;
-		}
 		break;
 	default:
 		printk(KERN_ERR "vtunerc%d: unregognized tuner vtype = %d\n", ctx->idx,
@@ -273,12 +268,7 @@ static int dvb_proxyfe_set_frontend(struct dvb_frontend *fe)
 		break;
 	case VT_A:
 		/* FIXME: untested */
-		if (ctx->vtype == VT_A && c->delivery_system == SYS_ATSC) {
 			msg.body.fe_params.u.vsb.modulation = c->modulation;
-		}
-		if (ctx->vtype == VT_A && c->delivery_system == SYS_DVBC_ANNEX_B) {
-			msg.body.fe_params.u.qam.modulation = c->modulation;
-		}
 		break;
 	default:
 		printk(KERN_ERR "vtunerc%d: unregognized tuner vtype = %d\n",
